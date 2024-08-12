@@ -15,10 +15,9 @@
 
 .playfield {
   display: grid;
-  grid-template-columns: repeat(128, 5px [col-start]);
-  grid-template-rows: repeat(128, 5px [col-start]);
 }
 
 .pixel {
   background: #000;
+  border: 0.5px solid #636363;
 }
