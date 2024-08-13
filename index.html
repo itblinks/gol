@@ -10,7 +10,15 @@
     <div id="app">
       <div class="playfield"></div>
       <button id="runButton">Run</button>
-      <input type="range">Animation Speed</button>
+      <input
+        id="animationSpeed"
+        name="animationSpeed"
+        type="range"
+        max="1"
+        value="0.5"
+        step="0.01"
+      />
+      <label for="animationSpeed">Animation Speed</label>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

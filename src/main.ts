@@ -1,13 +1,14 @@
 import "./style.css";
 
-const HEIGHT = 120;
-const WIDTH = 120;
+const HEIGHT = 128;
+const WIDTH = 128;
 
 class Cell {
   constructor(div: HTMLDivElement) {
     this.div = div;
   }
   alive: boolean = false;
+  next_alive: boolean = false;
   div: HTMLDivElement;
 }
 
@@ -48,6 +49,7 @@ class GoL {
         pixel.addEventListener("mouseover", (e) => {
           e.preventDefault();
           if (this.mouseDown) {
+            this.grid[row][col].alive = true;
             pixel.style.background = "white";
           }
         });
@@ -58,35 +60,44 @@ class GoL {
   updatePlayState() {
     for (let row = 0; row < HEIGHT; ++row) {
       for (let col = 0; col < WIDTH; ++col) {
-        let alive_neighbours = 0;
-        for (let neighbour_y = -1; neighbour_y < 1; ++neighbour_y) {
-          for (let neighbour_x = -1; neighbour_x < 1; ++neighbour_x) {
-            if (row + neighbour_x >= 0) {
-              if (col + neighbour_y >= 0) {
-                alive_neighbours += Number(
-                  this.grid[row + neighbour_x][col + neighbour_y].alive
-                );
-              }
+        let alive_neighbors = 0;
+        for (let neighbor_y = row - 1; neighbor_y <= row + 1; ++neighbor_y) {
+          for (let neighbor_x = col - 1; neighbor_x <= col + 1; ++neighbor_x) {
+            if (
+              neighbor_x >= 0 &&
+              neighbor_x < WIDTH &&
+              neighbor_y >= 0 &&
+              neighbor_y < HEIGHT &&
+              !(neighbor_x === col && neighbor_y === row)
+            ) {
+              alive_neighbors += Number(
+                this.grid[neighbor_y][neighbor_x].alive
+              );
             }
           }
         }
 
         let cell = this.grid[row][col];
         if (!cell.alive) {
-          // only if the cell has exactly three neighbours, it continues to live
-          cell.alive = alive_neighbours == 3;
+          // only if the cell has exactly three neighbors, it continues to live
+          cell.next_alive = alive_neighbors == 3;
+        } else if (alive_neighbors < 2) {
+          // due to underpopulation
+          cell.next_alive = false;
+        } else if (alive_neighbors > 3) {
+          // due to overpopulation
+          cell.next_alive = false;
         } else {
-          // these are all the state transitions if the cell is dying
-          if (alive_neighbours < 2) {
-            // due to underpopulation
-            cell.alive = false;
-          } else if (alive_neighbours > 3) {
-            // due to overpopulation
-            cell.alive;
-          }
+          cell.next_alive = cell.alive;
         }
+      }
+    }
 
-        // update visualization
+    // update visualization
+    for (let row = 0; row < HEIGHT; ++row) {
+      for (let col = 0; col < WIDTH; ++col) {
+        let cell = this.grid[row][col];
+        cell.alive = cell.next_alive;
         cell.alive
           ? (cell.div.style.background = "white")
           : (cell.div.style.background = "black");
@@ -96,10 +107,39 @@ class GoL {
 }
 
 const model = new GoL();
+let running = false;
 
 const runButtonClick = (e: Event) => {
-  model.updatePlayState();
+  running = !running;
+  let button = document.getElementById("runButton")!;
+  if (running) {
+    requestAnimationFrame(step);
+    button.innerHTML = "Stop";
+  } else {
+    button.innerHTML = "Run";
+  }
 };
 
 const runButton = document.getElementById("runButton") as HTMLButtonElement;
 runButton.addEventListener("click", runButtonClick);
+
+let previous = 0;
+let speed = 0.5;
+function step(timeStamp: DOMHighResTimeStamp) {
+  if (running) {
+    const elapsed = timeStamp - previous;
+    if (elapsed > speed * 1000) {
+      // const value = (timeStamp) / duration
+      model.updatePlayState();
+      previous = timeStamp;
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+const animationSpeedSlider = document.querySelector("#animationSpeed")!;
+animationSpeedSlider.addEventListener("input", (e: Event) => {
+  if (e.target) {
+    speed = +(<HTMLInputElement>e.target).value;
+  }
+});
